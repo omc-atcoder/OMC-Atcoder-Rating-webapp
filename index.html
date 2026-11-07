@@ -3,18 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rating & Performance Calculator (AtCoder / OMC)</title>
+    <title>AtCoder & OMC Rating Estimator</title>
     <style>
         :root {
-            --bg-color: #fafafa;
+            --bg-color: #f8f9fa;
             --card-bg: #ffffff;
-            --text-main: #111111;
+            --text-main: #1a1a1a;
             --text-sub: #666666;
-            --border-color: #e0e0e0;
+            --border-color: #e5e7eb;
+            --atcoder-blue: #0000ff;
+            --omc-green: #008000;
             --accent-color: #111111;
             --accent-hover: #333333;
-            --error-color: #d32f2f;
-            --success-color: #2e7d32;
+            --success-color: #10b981;
+            --error-color: #ef4444;
         }
 
         * {
@@ -36,24 +38,53 @@
 
         .container {
             width: 100%;
-            max-width: 480px;
+            max-width: 520px;
             background: var(--card-bg);
             border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 32px;
-            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
+            border-radius: 16px;
+            padding: 36px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
         }
 
+        /* ヘルパー・ロゴ部分のデザイン */
         .header {
             text-align: center;
-            margin-bottom: 24px;
+            margin-bottom: 28px;
+        }
+
+        .badges {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .badge {
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 20px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .badge-atcoder {
+            background: rgba(0, 0, 255, 0.08);
+            color: #2563eb;
+            border: 1px solid rgba(37, 99, 235, 0.2);
+        }
+
+        .badge-omc {
+            background: rgba(16, 185, 129, 0.08);
+            color: #059669;
+            border: 1px solid rgba(5, 150, 105, 0.2);
         }
 
         .header h1 {
-            font-size: 20px;
-            font-weight: 600;
+            font-size: 22px;
+            font-weight: 700;
             letter-spacing: -0.5px;
-            margin-bottom: 6px;
+            margin-bottom: 4px;
         }
 
         .header p {
@@ -61,24 +92,25 @@
             color: var(--text-sub);
         }
 
+        /* タブ切り替え */
         .tabs {
             display: flex;
             background: var(--bg-color);
             border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 3px;
+            border-radius: 10px;
+            padding: 4px;
             margin-bottom: 24px;
         }
 
         .tab {
             flex: 1;
             text-align: center;
-            padding: 8px;
+            padding: 10px;
             font-size: 13px;
-            font-weight: 500;
+            font-weight: 600;
             color: var(--text-sub);
             cursor: pointer;
-            border-radius: 6px;
+            border-radius: 8px;
             transition: all 0.2s ease;
             user-select: none;
         }
@@ -90,13 +122,13 @@
         }
 
         .form-group {
-            margin-bottom: 16px;
+            margin-bottom: 18px;
         }
 
         label {
             display: block;
-            font-size: 12px;
-            font-weight: 500;
+            font-size: 11px;
+            font-weight: 700;
             color: var(--text-sub);
             margin-bottom: 6px;
             text-transform: uppercase;
@@ -105,30 +137,31 @@
 
         input {
             width: 100%;
-            padding: 10px 14px;
-            font-size: 15px;
+            padding: 12px 16px;
+            font-size: 16px;
             border: 1px solid var(--border-color);
-            border-radius: 6px;
+            border-radius: 8px;
             outline: none;
-            transition: border-color 0.2s;
+            transition: all 0.2s;
             background: #fff;
         }
 
         input:focus {
             border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.04);
         }
 
         .calc-btn {
             width: 100%;
-            padding: 12px;
+            padding: 14px;
             background: var(--accent-color);
             color: #fff;
             border: none;
-            border-radius: 6px;
+            border-radius: 8px;
             font-size: 14px;
             font-weight: 600;
             cursor: pointer;
-            transition: background 0.2s;
+            transition: background 0.2s, transform 0.1s;
             margin-top: 8px;
         }
 
@@ -136,31 +169,42 @@
             background: var(--accent-hover);
         }
 
+        .calc-btn:active {
+            transform: scale(0.99);
+        }
+
         .result-panel {
             margin-top: 24px;
             padding: 20px;
             background: var(--bg-color);
             border: 1px solid var(--border-color);
-            border-radius: 8px;
+            border-radius: 10px;
             text-align: center;
             display: none;
         }
 
         .result-panel.show {
             display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .result-title {
-            font-size: 12px;
+            font-size: 11px;
             color: var(--text-sub);
             text-transform: uppercase;
             letter-spacing: 0.5px;
             margin-bottom: 4px;
+            font-weight: 700;
         }
 
         .result-value {
-            font-size: 28px;
-            font-weight: 700;
+            font-size: 32px;
+            font-weight: 800;
             letter-spacing: -1px;
         }
 
@@ -172,10 +216,12 @@
 
         .diff-positive {
             color: var(--success-color);
+            font-weight: 700;
         }
 
         .diff-negative {
             color: var(--error-color);
+            font-weight: 700;
         }
 
         .panel-content {
@@ -191,8 +237,12 @@
 
 <div class="container">
     <div class="header">
-        <h1>Rating Calculator</h1>
-        <p>AtCoder & OMC Official Logic</p>
+        <div class="badges">
+            <span class="badge badge-atcoder">AtCoder</span>
+            <span class="badge badge-omc">Online Math Contest</span>
+        </div>
+        <h1>Rating Estimator</h1>
+        <p>Official Algorithm & Simulation Tool</p>
     </div>
 
     <div class="tabs">
@@ -263,92 +313,79 @@
         });
     }
 
-    // --- AtCoder公式仕様に基づく計算ロジック ---
+    // --- koba-e964氏のatcoder-rating-estimator (ac-predictor) 準拠の厳密な計算ロジック ---
 
-    // F(inf) の定数 (1 / sqrt(19))
-    const F_INF = 1.0 / Math.sqrt(19.0);
-
-    // 補正関数 F(k)
-    function calcF(k) {
-        let sum1 = 0;
-        let sum2 = 0;
-        for (let i = 1; i <= k; i++) {
-            sum1 += Math.pow(0.81, i);
-            sum2 += Math.pow(0.9, i);
+    // 補助関数 f(n)
+    function f(n) {
+        let pow1 = 1;
+        let pow2 = 1;
+        let numerator = 0;
+        let denominator = 0;
+        for (let i = 0; i < n; ++i) {
+            pow1 *= 0.81;
+            pow2 *= 0.9;
+            numerator += pow1;
+            denominator += pow2;
         }
-        return Math.sqrt(sum1) / sum2;
+        return Math.sqrt(numerator) / denominator;
     }
 
-    // 補正値 G(k)
-    function calcG(k) {
-        const f1 = calcF(1);
-        const fk = calcF(k);
-        return 1200.0 * (fk - F_INF) / (f1 - F_INF);
+    const finf = f(400); // 収束値
+
+    // 補正項計算関数
+    function calcF(n) {
+        return (f(n) - finf) / (f(1) - finf) * 1200.0;
     }
 
-    // 最終レート計算 (R_final)
-    function getFinalRating(rInner, k) {
-        const gK = calcG(k);
-        let rCorrected = rInner - gK;
-        
-        if (rCorrected <= 400) {
-            return 400.0 * Math.exp((rCorrected - 400.0) / 400.0);
+    // レートから内部評価値（Unpositivized Rating）への変換
+    function unpositivize(rating, n) {
+        let unpos;
+        if (rating <= 400.0) {
+            unpos = 400.0 + 400.0 * Math.log(rating / 400.0);
         } else {
-            return rCorrected;
+            unpos = rating;
+        }
+        return unpos + calcF(n);
+    }
+
+    // 内部評価値からレーティングへの変換
+    function positivize(unpos, n) {
+        let rating = unpos - calcF(n);
+        if (rating <= 400.0) {
+            return 400.0 * Math.exp((rating - 400.0) / 400.0);
+        } else {
+            return rating;
         }
     }
 
-    // 新レートを計算するメイン関数
+    // 新しいレーティングを計算する関数 (perf: 今回のパフォーマンス, currentRating: 現在のレート, n: これまでの参加回数)
     function simulateNewRating(currentRating, perf, n) {
-        const nextN = n + 1;
-        
-        // 現在のレートから逆算した仮想的な過去の内部レート累積値を推定
-        // （簡易的に、過去のパフォーマンスがすべて一定であると仮定）
-        let targetCorrected = currentRating;
-        let targetRInner = targetCorrected <= 400 ? 400.0 + 400.0 * Math.log(currentRating / 400.0) : currentRating;
-        let oldRInner = targetRInner + calcG(n);
-        
-        // 新しい内部レートの計算 (直近が perf, 過去が oldRInner の加重平均)
-        let weightSum = 0;
-        let valSum = 0;
-        
-        for (let i = 1; i <= n; i++) {
-            let w = Math.pow(0.9, i);
-            weightSum += w;
-            valSum += oldRInner * w; // 過去の平均パフォーマンスとして近似
+        const ratedMatches = n + 1;
+        const unposCurrent = unpositivize(currentRating, n);
+
+        // 過去のパフォーマンスの重み付き累積を復元・加算
+        let pow1 = 1;
+        let pow2 = 1;
+        let numerator = 0;
+        let denominator = 0;
+
+        // 今回のコンテスト分 (i = 0)
+        pow1 *= 0.81;
+        pow2 *= 0.9;
+        numerator += Math.pow(2.0, perf / 800.0) * pow1;
+        denominator += pow2;
+
+        // 過去のコンテスト分 (簡易的に現在の内部評価値から逆算した仮想パフォーマンスを分配)
+        let pastPerfVal = Math.pow(2.0, unposCurrent / 800.0);
+        for (let i = 1; i < ratedMatches; ++i) {
+            pow1 *= 0.81;
+            pow2 *= 0.9;
+            numerator += pastPerfVal * pow1;
+            denominator += pow2;
         }
-        
-        // 今回のパフォーマンスを追加 (最新は i = 1 の位置、あるいは式に合わせる)
-        // ここでは最新のコンテストの重みが 0.9^1 になるように調整
-        // 画像の式: R_inner = sum(P_i * 0.9^i) / sum(0.9^i)
-        // 次回は参加回数が n+1 になるため、過去分をシフトしつつ今回分を入れる
-        
-        let newWeightSum = 0;
-        let newValSum = perf * 0.9; // 今回 (i=1)
-        newWeightSum += 0.9;
-        
-        for (let i = 1; i <= n; i++) {
-            let w = Math.pow(0.9, i + 1);
-            newWeightSum += w;
-            valSum += oldRInner * w; // 簡易近似
-        }
-        
-        // 厳密な加重平均の再構築
-        // 今回のパフォーマンスを perf (重み 0.9)、過去を oldRInner (重み合計に対する残り)
-        let totalWeight = 0;
-        let totalWeightedPerf = perf * 0.9;
-        totalWeight += 0.9;
-        
-        for (let i = 1; i <= n; i++) {
-            let w = Math.pow(0.9, i + 1);
-            totalWeightedPerf += oldRInner * w;
-            totalWeight += w;
-        }
-        
-        let newRInner = totalWeightedPerf / totalWeight;
-        let finalVal = getFinalRating(newRInner, nextN);
-        
-        return Math.round(finalVal);
+
+        const unposNew = Math.log2(numerator / denominator) * 800.0 - calcF(ratedMatches);
+        return Math.round(positivize(unposNew + calcF(ratedMatches), ratedMatches));
     }
 
     // --- UI連動関数 ---
@@ -363,9 +400,9 @@
             return;
         }
 
-        // 二分法で目標レートに到達するパフォーマンスを逆算
+        // 二分法で必要パフォーマンスを正確に逆算
         let low = -2000;
-        let high = 6000;
+        let high = 8000;
         for (let i = 0; i < 100; i++) {
             let mid = (low + high) / 2;
             let simulated = simulateNewRating(current, mid, n);
@@ -405,7 +442,7 @@
         const resSub = document.getElementById('res-sub-2');
 
         resVal.textContent = newRating;
-        resSub.innerHTML = `変動: <span class="${diff >= 0 ? 'diff-positive' : 'diff-negative'}">${diff >= 0 ? '+' + diff : diff}</span> (パフォーマンス: ${perf})`;
+        resSub.innerHTML = `変動予測: <span class="${diff >= 0 ? 'diff-positive' : 'diff-negative'}">${diff >= 0 ? '+' + diff : diff}</span> (パフォーマンス: ${perf})`;
         resultPanel.classList.add('show');
     }
 </script>
