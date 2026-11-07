@@ -320,18 +320,19 @@
 
     // bigf(n)
     function bigf(n) {
-        let pow1 = 1;
-        let pow2 = 1;
-        let numerator = 0;
-        let denominator = 0;
+    let num = 1.0;
+    let den = 1.0;
 
-        for (let i = 0; i < n; i++) {
-            pow1 *= 0.81;
-            pow2 *= 0.9;
+    for (let i = 0; i < n; ++i) {
+        num *= 0.81;
+        den *= 0.9;
+    }
 
-            numerator += pow1;
-            denominator += pow2;
-        }
+    num = (1 - num) * 0.81 / 0.19;
+    den = (1 - den) * 0.9 / 0.1;
+
+    return Math.sqrt(num) / den;
+}
 
         return Math.sqrt(numerator) / denominator;
     }
@@ -421,30 +422,32 @@
 
     function findRequiredPerformance(currentRating, targetRating, ratedMatches) {
 
-        let valid = 10000.0;
-        let invalid = -10000.0;
+    const goal = unpositivizeRating(targetRating);
+    const last = unpositivizeRating(currentRating);
 
-        for (let i = 0; i < 100; i++) {
-
-            const mid = (invalid + valid) / 2.0;
-
-            const simulatedRating =
-                simulateNewRating(
-                    currentRating,
-                    mid,
-                    ratedMatches
-                );
-
-            if (targetRating <= simulatedRating) {
-                valid = mid;
-            } else {
-                invalid = mid;
-            }
-        }
-
-        return valid;
+    // 初回参加の場合
+    if (ratedMatches === 0) {
+        return goal + 1200.0;
     }
 
+    let lo = -10000.0;
+    let hi = 10000.0;
+
+    for (let i = 0; i < 100; ++i) {
+        const mid = (hi + lo) / 2.0;
+
+        const rating =
+            calcRatingFromLast(last, mid, ratedMatches);
+
+        if (rating >= goal) {
+            hi = mid;
+        } else {
+            lo = mid;
+        }
+    }
+
+    return hi;
+}
 
     // ==========================================
     // 入力値の検証
@@ -509,7 +512,7 @@
         const resSub =
             document.getElementById('res-sub-1');
 
-        resVal.textContent = Math.ceil(requiredPerf);
+        resVal.textContent = requiredPerf.toString();
 
         const diff = target - current;
 
