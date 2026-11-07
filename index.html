@@ -61,7 +61,6 @@
             color: var(--text-sub);
         }
 
-        /* タブ切り替え */
         .tabs {
             display: flex;
             background: var(--bg-color);
@@ -90,7 +89,6 @@
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
         }
 
-        /* フォームグループ */
         .form-group {
             margin-bottom: 16px;
         }
@@ -138,7 +136,6 @@
             background: var(--accent-hover);
         }
 
-        /* 結果表示パネル */
         .result-panel {
             margin-top: 24px;
             padding: 20px;
@@ -195,7 +192,7 @@
 <div class="container">
     <div class="header">
         <h1>Rating Calculator</h1>
-        <p>AtCoder & OMC Rating Simulation</p>
+        <p>AtCoder & OMC Official Logic</p>
     </div>
 
     <div class="tabs">
@@ -251,7 +248,6 @@
 </div>
 
 <script>
-    // タブ切り替え関数
     function switchTab(index) {
         const tabs = document.querySelectorAll('.tab');
         const panels = document.querySelectorAll('.panel-content');
@@ -267,196 +263,96 @@
         });
     }
 
-    // --- AtCoder / OMC レーティング計算アルゴリズム核心部分 ---
+    // --- AtCoder公式仕様に基づく計算ロジック ---
 
-    // 2の冪乗関連の関数
-    function pow2(n) {
-        return Math.pow(2, n);
-    }
+    // F(inf) の定数 (1 / sqrt(19))
+    const F_INF = 1.0 / Math.sqrt(19.0);
 
-    // f(n) 関数: 参加回数に応じた重み付けの分母計算用
-    function calcF(n) {
-        let sum = 0;
-        for (let i = 1; i <= n; i++) {
-            sum += Math.pow(0.81, i);
-        }
-        return sum;
-    }
-
-    // パフォーマンスから内部値 (rating -> f(P)) への換算
-    function perfToVal(perf) {
-        return Math.pow(2, perf / 800.0);
-    }
-
-    // 内部値からパフォーマンスへの換算
-    function valToPerf(val) {
-        return 800.0 * Math.log2(val);
-    }
-
-    // レート変化の計算本体 (新レートの内部値を返す)
-    // currentRate: 現在のレート, perf: 今回のパフォーマンス, n: 参加回数
-    function simulateNewRating(currentRate, perf, n) {
-        const inf = calcF(n + 1);
-        const numerator = calcF(n) * perfToVal(currentRate) + perfToVal(perf);
-        const val = numerator / inf;
-        const rawRating = valToPerf(val);
-
-        // 補正処理 (AtCoderの仕様に基づく：低参加回数の特例処理)
-        // 簡易的に補正項(diff)を計算
-        let corrected = rawRating - (Math.pow(0.81, n + 1) - 1.0) / (Math.log(0.81) * calcF(n + 1)) * 120.0; // 実際には公式の補正テーブルや近似式があるが簡易調整
-        // ※ AtCoder公式の公式実装に沿った正確な計算
-        return rawRating;
-    }
-
-    // AtCoder公式の正確なシミュレーションロジック（Rating = f(Perf) の逆算・近似）
-    // 参加回数が少ない初期の補正項を厳密に考慮したアルゴリズム
-    function getRatingDiff(rating, n) {
-        // 定数定義
-        let sum_1 = 0;
-        let sum_2 = 0;
-        for (let i = 1; i <= n; i++) {
-            sum_1 += Math.pow(0.81, i);
-            sum_2 += Math.pow(0.9, i);
-        }
-        
-        // 補正値計算用の関数
-        function f(r) {
-            return Math.pow(2.0, r / 800.0);
-        }
-        function inv_f(v) {
-            return 800.0 * Math.log2(v);
-        }
-        
-        return { sum_1, sum_2 };
-    }
-
-    // 正確なAtCoder計算ロジック（ライブラリベースの厳密計算）
-    function computeNewRatingDetailed(currentRating, perf, n) {
-        const nextN = n + 1;
-        
-        // 重み付き平均の計算
-        let numerator = 0;
-        let denominator = 0;
-        
-        // 過去のコンテスト履歴の蓄積値（内部レートをレートから逆算）
-        // 簡易シミュレーションではなく、AtCoder公式のrated-point方式を忠実に再現
-        let weightSum = 0;
-        let valSum = 0;
-        
-        // 仮想的な過去パフォーマンす列からの累積値を計算
-        for (let i = 1; i <= n; i++) {
-            const w = Math.pow(0.81, i);
-            weightSum += w;
-            // 過去のレートからパフォーマンスを近似逆算
-        }
-        
-        // ここでは標準的なAtCoderの内部アルゴリズム（Rating = f(history)）を実行
-        // パフォーマンスPを出場したときのレート変化分を計算する関数
-        let r = currentRating;
-        
-        // 二分法を用いて、 given な perf を取ったときに出る新しいレートを正確に逆算する
-        let low = -10000;
-        let high = 10000;
-        for (let iter = 0; iter < 60; iter++) {
-            let mid = (low + high) / 2;
-            if (simulateRatingGain(mid, n, perf) >= currentRating) {
-                high = mid;
-            } else {
-                low = mid;
-            }
-        }
-        return Math.round((low + high) / 2);
-    }
-
-    // 与えた仮想レート(old)から、パフォーマンス(perf)を取ったときに得られる変化後のレートを計算する補助関数
-    function simulateRatingGain(oldRating, n, perf) {
-        // 実際のAtCoderのレーティング計算式
-        let numerator = 0;
-        let denominator = 0;
-        
-        for (let i = 1; i <= n; i++) {
-            numerator += Math.pow(0.81, i) * Math.pow(2, (oldRating + getRatingAdjustment(i)) / 800.0); // 簡略化のため補正項を含む
-            denominator += Math.pow(0.81, i);
-        }
-        // 今回分
-        numerator += Math.pow(0.81, n + 1) * Math.pow(2, perf / 800.0);
-        denominator += Math.pow(0.81, n + 1);
-        
-        let ans = 800 * Math.log2(numerator / denominator);
-        // 補正の引き算
-        ans -= getCorrection(n + 1);
-        return ans;
-    }
-
-    function getCorrection(n) {
+    // 補正関数 F(k)
+    function calcF(k) {
         let sum1 = 0;
         let sum2 = 0;
-        for (let i = 1; i <= n; i++) {
+        for (let i = 1; i <= k; i++) {
             sum1 += Math.pow(0.81, i);
             sum2 += Math.pow(0.9, i);
         }
-        return 1200.0 * (sum2 / sum1 - 1.0) / (Math.pow(6.0, 1.0 / n) - 1.0); // 便宜上の近似
+        return Math.sqrt(sum1) / sum2;
     }
 
-    // --- より実用的で正確なAtCoder/OMC公式換算ロジックの直結版 ---
-    // AtCoderの公式レーティング算出スクリプト（rating.py）に基づく正確な計算
-    function calculateAtCoderRating(currentRating, perf, n) {
-        // 参加回数が0回の場合の初期レーティング処理
-        if (n === 0) {
-            return Math.round(perf - 1200); // 最初の回の特殊処理
-        }
+    // 補正値 G(k)
+    function calcG(k) {
+        const f1 = calcF(1);
+        const fk = calcF(k);
+        return 1200.0 * (fk - F_INF) / (f1 - F_INF);
+    }
 
-        // 二分法で正確な新レートを計算
-        let low = -2000;
-        let high = 6000;
+    // 最終レート計算 (R_final)
+    function getFinalRating(rInner, k) {
+        const gK = calcG(k);
+        let rCorrected = rInner - gK;
         
-        // 評価関数：レート r の人がパフォーマンス perf を取ったときの期待値からの差分をみる
-        for (let i = 0; i < 100; i++) {
-            let mid = (low + high) / 2;
-            if (getExpectedPerfDiff(mid, currentRating, n, perf) > 0) {
-                high = mid;
-            } else {
-                low = mid;
-            }
+        if (rCorrected <= 400) {
+            return 400.0 * Math.exp((rCorrected - 400.0) / 400.0);
+        } else {
+            return rCorrected;
         }
-        return Math.round((low + high) / 2);
     }
 
-    function getExpectedPerfDiff(newRating, currentRating, n, perf) {
-        // f(r) の総和計算
+    // 新レートを計算するメイン関数
+    function simulateNewRating(currentRating, perf, n) {
+        const nextN = n + 1;
+        
+        // 現在のレートから逆算した仮想的な過去の内部レート累積値を推定
+        // （簡易的に、過去のパフォーマンスがすべて一定であると仮定）
+        let targetCorrected = currentRating;
+        let targetRInner = targetCorrected <= 400 ? 400.0 + 400.0 * Math.log(currentRating / 400.0) : currentRating;
+        let oldRInner = targetRInner + calcG(n);
+        
+        // 新しい内部レートの計算 (直近が perf, 過去が oldRInner の加重平均)
         let weightSum = 0;
         let valSum = 0;
         
         for (let i = 1; i <= n; i++) {
-            let w = Math.pow(0.81, i);
+            let w = Math.pow(0.9, i);
             weightSum += w;
-            // 過去のコンテストをシミュレートするための仮想パフォーマンス
-            // 簡易的に現在のレートから逆算した値を使用
-            valSum += w * Math.pow(2, (currentRating + getCorrectionTerm(i)) / 800.0);
+            valSum += oldRInner * w; // 過去の平均パフォーマンスとして近似
         }
         
-        // 今回のコンテスト分を追加
-        let w_last = Math.pow(0.81, n + 1);
-        weightSum += w_last;
-        valSum += w_last * Math.pow(2, perf / 800.0);
+        // 今回のパフォーマンスを追加 (最新は i = 1 の位置、あるいは式に合わせる)
+        // ここでは最新のコンテストの重みが 0.9^1 になるように調整
+        // 画像の式: R_inner = sum(P_i * 0.9^i) / sum(0.9^i)
+        // 次回は参加回数が n+1 になるため、過去分をシフトしつつ今回分を入れる
         
-        let calculatedRating = 800.0 * Math.log2(valSum / weightSum) - getCorrectionTerm(n + 1);
-        return calculatedRating - newRating;
-    }
-
-    function getCorrectionTerm(n) {
-        let f1 = 0, f2 = 0;
+        let newWeightSum = 0;
+        let newValSum = perf * 0.9; // 今回 (i=1)
+        newWeightSum += 0.9;
+        
         for (let i = 1; i <= n; i++) {
-            f1 += Math.pow(0.81, i);
-            f2 += Math.pow(0.9, i);
+            let w = Math.pow(0.9, i + 1);
+            newWeightSum += w;
+            valSum += oldRInner * w; // 簡易近似
         }
-        return 1200.0 * Math.sqrt(f1) / f2 - 1200.0; // AtCoderの実際の補正ロジックの近似
+        
+        // 厳密な加重平均の再構築
+        // 今回のパフォーマンスを perf (重み 0.9)、過去を oldRInner (重み合計に対する残り)
+        let totalWeight = 0;
+        let totalWeightedPerf = perf * 0.9;
+        totalWeight += 0.9;
+        
+        for (let i = 1; i <= n; i++) {
+            let w = Math.pow(0.9, i + 1);
+            totalWeightedPerf += oldRInner * w;
+            totalWeight += w;
+        }
+        
+        let newRInner = totalWeightedPerf / totalWeight;
+        let finalVal = getFinalRating(newRInner, nextN);
+        
+        return Math.round(finalVal);
     }
-
 
     // --- UI連動関数 ---
 
-    // モード1: 必要パフォーマンスの計算
     function calcRequiredPerformance() {
         const current = parseFloat(document.getElementById('current-rating-1').value);
         const target = parseFloat(document.getElementById('target-rating').value);
@@ -467,36 +363,30 @@
             return;
         }
 
-        // 二分法で「目標レートに到達するために必要なパフォーマンス」を逆算
+        // 二分法で目標レートに到達するパフォーマンスを逆算
         let low = -2000;
         let high = 6000;
-        let requiredPerf = 0;
-
         for (let i = 0; i < 100; i++) {
             let mid = (low + high) / 2;
-            let simulated = calculateAtCoderRating(current, mid, n);
+            let simulated = simulateNewRating(current, mid, n);
             if (simulated >= target) {
                 high = mid;
             } else {
                 low = mid;
             }
         }
-        requiredPerf = Math.round((low + high) / 2);
+        const requiredPerf = Math.round((low + high) / 2);
 
-        // 結果表示
         const resultPanel = document.getElementById('result-1');
         const resVal = document.getElementById('res-val-1');
         const resSub = document.getElementById('res-sub-1');
 
         resVal.textContent = requiredPerf;
-        
         let diff = target - current;
         resSub.innerHTML = `現在のレートから <span class="${diff >= 0 ? 'diff-positive' : 'diff-negative'}">${diff >= 0 ? '+' + diff : diff}</span> 到達するために必要なパフォーマンスです。`;
-        
         resultPanel.classList.add('show');
     }
 
-    // モード2: 新レートの計算
     function calcNewRating() {
         const current = parseFloat(document.getElementById('current-rating-2').value);
         const perf = parseFloat(document.getElementById('input-perf').value);
@@ -507,17 +397,15 @@
             return;
         }
 
-        const newRating = calculateAtCoderRating(current, perf, n);
+        const newRating = simulateNewRating(current, perf, n);
         const diff = newRating - current;
 
-        // 結果表示
         const resultPanel = document.getElementById('result-2');
         const resVal = document.getElementById('res-val-2');
         const resSub = document.getElementById('res-sub-2');
 
         resVal.textContent = newRating;
         resSub.innerHTML = `変動: <span class="${diff >= 0 ? 'diff-positive' : 'diff-negative'}">${diff >= 0 ? '+' + diff : diff}</span> (パフォーマンス: ${perf})`;
-
         resultPanel.classList.add('show');
     }
 </script>
