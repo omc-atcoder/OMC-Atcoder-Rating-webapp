@@ -419,7 +419,7 @@
     // 目標Ratingに必要なPerformanceを計算
     // ==========================================
 
-    function calcRequiredPerformance(currentRating, targetRating, ratedMatches) {
+    function findRequiredPerformance(currentRating, targetRating, ratedMatches) {
 
         let valid = 10000.0;
         let invalid = -10000.0;
@@ -498,7 +498,7 @@
         }
 
         const requiredPerf =
-            calcRequiredPerformance(current, target, n);
+    findRequiredPerformance(current, target, n);
 
         const resultPanel =
             document.getElementById('result-1');
