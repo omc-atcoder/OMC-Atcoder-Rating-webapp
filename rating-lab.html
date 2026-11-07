@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#101827">
+  <title>Rating Lab | AtCoder × OMC</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #172033;
+      --muted: #748096;
+      --line: #e5eaf1;
+      --paper: #ffffff;
+      --canvas: #f3f6fa;
+      --navy: #101827;
+      --blue: #2563eb;
+      --blue-soft: #eff5ff;
+      --green: #0b956c;
+      --green-soft: #eaf8f2;
+      --red: #dc5353;
+      --shadow: 0 22px 60px rgba(16, 24, 39, .09);
+    }
+
+    * { box-sizing: border-box; }
+    html { min-width: 320px; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      padding: 42px 18px;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 12% 5%, rgba(37,99,235,.08), transparent 28rem),
+        radial-gradient(circle at 90% 85%, rgba(11,149,108,.07), transparent 25rem),
+        var(--canvas);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+        "Segoe UI", "Noto Sans JP", sans-serif;
+    }
+
+    button, input { font: inherit; }
+    button { -webkit-tap-highlight-color: transparent; }
+
+    .shell { width: min(100%, 590px); margin: 0 auto; }
+    .topline {
+      display: flex; align-items: center; justify-content: space-between;
+      margin: 0 4px 16px;
+      color: #7c8799; font-size: 10px; font-weight: 800;
+      letter-spacing: .18em; text-transform: uppercase;
+    }
+    .status { display: inline-flex; align-items: center; gap: 7px; }
+    .status::before {
+      content: ""; width: 7px; height: 7px; border-radius: 50%;
+      background: #18a879; box-shadow: 0 0 0 4px rgba(24,168,121,.12);
+    }
+
+    .app {
+      overflow: hidden; background: var(--paper);
+      border: 1px solid rgba(221,228,237,.9); border-radius: 24px;
+      box-shadow: var(--shadow);
+    }
+    .hero {
+      position: relative; overflow: hidden;
+      padding: 29px 34px 27px; color: white; background: var(--navy);
+    }
+    .hero::before, .hero::after {
+      content: ""; position: absolute; border: 1px solid rgba(255,255,255,.07);
+      border-radius: 50%; pointer-events: none;
+    }
+    .hero::before { width: 260px; height: 260px; right: -100px; top: -165px; }
+    .hero::after { width: 190px; height: 190px; right: -65px; top: -130px; }
+    .brand-row {
+      position: relative; z-index: 1; display: flex; align-items: center;
+      justify-content: space-between; gap: 14px; margin-bottom: 26px;
+    }
+    .brands { display: flex; align-items: center; gap: 18px; min-width: 0; }
+    .brand-link {
+      display: inline-flex; align-items: center; justify-content: center;
+      min-height: 32px; text-decoration: none;
+    }
+    .atcoder-logo { display: block; width: 104px; height: auto; max-height: 34px; object-fit: contain; }
+    .brand-divider { width: 1px; height: 25px; background: rgba(255,255,255,.2); }
+    .omc-mark { display: flex; align-items: center; gap: 8px; color: #fff; }
+    .omc-symbol {
+      display: grid; place-items: center; width: 31px; height: 31px;
+      border: 1.5px solid #42c59a; border-radius: 9px;
+      color: #66dfb4; font-size: 12px; font-weight: 900; letter-spacing: -.08em;
+    }
+    .omc-word { font-size: 12px; line-height: 1.1; font-weight: 850; letter-spacing: .1em; }
+    .omc-word small { display: block; margin-top: 4px; color: #aab5c5; font-size: 7px; letter-spacing: .13em; }
+    .independent {
+      position: relative; z-index: 1; padding: 6px 9px; border: 1px solid rgba(255,255,255,.17);
+      border-radius: 999px; color: #c5cedb; font-size: 9px; font-weight: 700;
+      letter-spacing: .1em; white-space: nowrap;
+    }
+    .eyebrow {
+      position: relative; z-index: 1; margin: 0 0 8px;
+      color: #8fa2bd; font-size: 10px; font-weight: 800; letter-spacing: .2em;
+    }
+    h1 {
+      position: relative; z-index: 1; margin: 0;
+      font-size: clamp(28px, 6vw, 36px); line-height: 1.08;
+      font-weight: 850; letter-spacing: -.055em;
+    }
+    .hero-copy {
+      position: relative; z-index: 1; margin: 11px 0 0;
+      color: #aeb9c9; font-size: 12px; line-height: 1.8;
+    }
+
+    .main { padding: 27px 34px 30px; }
+    .tabs {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 5px;
+      padding: 5px; margin-bottom: 27px;
+      border: 1px solid var(--line); border-radius: 13px; background: #f6f8fb;
+    }
+    .tab {
+      min-height: 43px; border: 0; border-radius: 9px; background: transparent;
+      color: #7b8799; font-size: 12px; font-weight: 750; cursor: pointer;
+      transition: .18s ease;
+    }
+    .tab:hover { color: var(--ink); }
+    .tab.active {
+      color: white; background: var(--navy);
+      box-shadow: 0 3px 9px rgba(16,24,39,.16);
+    }
+    .panel { display: none; }
+    .panel.active { display: block; animation: appear .22s ease; }
+    @keyframes appear { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+    .section-heading { margin-bottom: 20px; }
+    .section-heading h2 { margin: 0; font-size: 17px; font-weight: 800; letter-spacing: -.03em; }
+    .section-heading p { margin: 6px 0 0; color: var(--muted); font-size: 11px; line-height: 1.6; }
+
+    .field { margin-bottom: 17px; }
+    .label-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 7px; }
+    label { color: #5f6b7e; font-size: 11px; font-weight: 750; }
+    .field-hint { color: #a1aaba; font-size: 10px; }
+    .input-wrap { position: relative; }
+    input {
+      display: block; width: 100%; height: 49px; padding: 0 15px;
+      border: 1px solid #dfe5ed; border-radius: 10px; outline: none;
+      color: var(--ink); background: #fff; font-size: 16px; font-weight: 650;
+      font-variant-numeric: tabular-nums; transition: border-color .18s, box-shadow .18s;
+    }
+    input::placeholder { color: #c1c9d4; font-weight: 450; }
+    input:focus { border-color: #6c91e8; box-shadow: 0 0 0 3px rgba(37,99,235,.1); }
+    input.invalid { border-color: var(--red); box-shadow: 0 0 0 3px rgba(220,83,83,.08); }
+
+    .calculate {
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      width: 100%; min-height: 51px; margin-top: 23px; border: 0; border-radius: 11px;
+      color: white; background: var(--blue); font-size: 13px; font-weight: 800;
+      letter-spacing: .015em; cursor: pointer; box-shadow: 0 7px 15px rgba(37,99,235,.18);
+      transition: transform .15s, background .15s, box-shadow .15s;
+    }
+    .calculate:hover { background: #1d4ed8; box-shadow: 0 9px 19px rgba(37,99,235,.23); }
+    .calculate:active { transform: translateY(1px); }
+    .calculate svg { width: 16px; height: 16px; }
+
+    .result {
+      display: none; margin-top: 22px; padding: 19px 20px 17px;
+      border: 1px solid #dce8ff; border-radius: 13px; background: var(--blue-soft);
+    }
+    .result.show { display: block; animation: appear .25s ease; }
+    .result-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .result-label { color: #54709f; font-size: 10px; font-weight: 850; letter-spacing: .13em; }
+    .result-chip { padding: 5px 8px; border-radius: 999px; color: #3865b8; background: #dce9ff; font-size: 9px; font-weight: 800; }
+    .result-value {
+      margin: 8px 0 2px; color: #17469d; font-size: clamp(32px, 8vw, 42px);
+      line-height: 1.1; font-weight: 850; letter-spacing: -.055em;
+      font-variant-numeric: tabular-nums; overflow-wrap: anywhere;
+    }
+    .result-description { margin: 8px 0 0; color: #647b9f; font-size: 11px; line-height: 1.7; }
+    .result-description strong { color: #2456a8; }
+    .result-divider { height: 1px; margin: 14px 0 11px; background: #d8e5fb; }
+    .result-foot { display: flex; justify-content: space-between; gap: 12px; color: #7185a5; font-size: 10px; }
+    .result-foot strong { color: #355f9e; font-variant-numeric: tabular-nums; }
+
+    .error {
+      display: none; margin-top: 13px; padding: 10px 12px; border-radius: 9px;
+      color: #a83e3e; background: #fff0f0; font-size: 11px; line-height: 1.6;
+    }
+    .error.show { display: block; }
+    .note {
+      display: flex; gap: 10px; margin-top: 23px; padding: 13px 14px;
+      border: 1px solid #e9edf3; border-radius: 10px; background: #fafbfd;
+      color: #7c8798; font-size: 10px; line-height: 1.75;
+    }
+    .note-icon {
+      flex: 0 0 19px; display: grid; place-items: center; width: 19px; height: 19px;
+      border-radius: 50%; color: #66758b; background: #e9eef5; font-size: 11px; font-weight: 900;
+    }
+
+    .footer {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      padding: 16px 34px; border-top: 1px solid #edf0f4; color: #9aa4b2;
+      font-size: 9px; letter-spacing: .04em;
+    }
+    .footer a { color: #71809a; text-decoration: none; }
+    .footer a:hover { color: var(--blue); text-decoration: underline; }
+    .footer-right { text-align: right; }
+
+    @media (max-width: 520px) {
+      body { padding: 15px 10px 25px; }
+      .topline { margin: 0 5px 12px; }
+      .hero { padding: 24px 21px 23px; }
+      .main { padding: 22px 21px 24px; }
+      .footer { padding: 14px 21px; }
+      .brands { gap: 12px; }
+      .atcoder-logo { width: 91px; }
+      .independent { font-size: 8px; padding: 5px 7px; }
+    }
+    @media (max-width: 370px) {
+      .independent { display: none; }
+      .footer { align-items: flex-start; flex-direction: column; }
+      .footer-right { text-align: left; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <div class="topline">
+      <span>CONTEST TOOLS / 001</span>
+      <span class="status">CALCULATION READY</span>
+    </div>
+
+    <div class="app">
+      <header class="hero">
+        <div class="brand-row">
+          <div class="brands">
+            <a class="brand-link" href="https://atcoder.jp/" target="_blank" rel="noopener noreferrer" aria-label="AtCoder">
+              <img class="atcoder-logo"
+                src="https://img.atcoder.jp/logo/atcoder/logo_white.png"
+                alt="AtCoder"
+                onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-block';">
+              <span style="display:none;color:#fff;font-size:17px;font-weight:850;letter-spacing:-.04em;">AtCoder</span>
+            </a>
+            <span class="brand-divider"></span>
+            <a class="brand-link omc-mark" href="https://omc.ress.jp/" target="_blank" rel="noopener noreferrer" aria-label="Online Math Contest">
+              <span class="omc-symbol">OMC</span>
+              <span class="omc-word">OMC<small>ONLINE MATH CONTEST</small></span>
+            </a>
+          </div>
+          <span class="independent">UNOFFICIAL TOOL</span>
+        </div>
+        <p class="eyebrow">RATING ANALYSIS SYSTEM</p>
+        <h1>Rating Estimator</h1>
+        <p class="hero-copy">次のコンテストで目指すレーティングを、数値でシミュレーション。</p>
+      </header>
+
+      <main class="main">
+        <div class="tabs" role="tablist" aria-label="計算モード">
+          <button class="tab active" id="tab-required" type="button" role="tab" aria-selected="true" aria-controls="panel-required">必要パフォーマンス</button>
+          <button class="tab" id="tab-new" type="button" role="tab" aria-selected="false" aria-controls="panel-new">新レート予測</button>
+        </div>
+
+        <section class="panel active" id="panel-required" role="tabpanel" aria-labelledby="tab-required">
+          <div class="section-heading">
+            <h2>目標レーティングから逆算</h2>
+            <p>現在のレーティングと参加回数から、目標到達に必要なパフォーマンスを求めます。</p>
+          </div>
+
+          <div class="field">
+            <div class="label-row">
+              <label for="current-rating-1">現在のレーティング</label>
+              <span class="field-hint">CURRENT RATING</span>
+            </div>
+            <input type="number" id="current-rating-1" value="1200" min="1" step="1" inputmode="numeric">
+          </div>
+          <div class="field">
+            <div class="label-row">
+              <label for="target-rating">目標のレーティング</label>
+              <span class="field-hint">TARGET RATING</span>
+            </div>
+            <input type="number" id="target-rating" value="1400" min="1" step="1" inputmode="numeric">
+          </div>
+          <div class="field">
+            <div class="label-row">
+              <label for="rated-count-1">これまでの参加回数</label>
+              <span class="field-hint">PREVIOUS RATED CONTESTS</span>
+            </div>
+            <input type="number" id="rated-count-1" value="10" min="0" step="1" inputmode="numeric">
+          </div>
+
+          <button class="calculate" id="calculate-required" type="button">
+            <span>必要パフォーマンスを計算</span>
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div class="error" id="error-required" role="alert"></div>
+
+          <div class="result" id="result-required" aria-live="polite">
+            <div class="result-top">
+              <span class="result-label">REQUIRED PERFORMANCE</span>
+              <span class="result-chip">ESTIMATED VALUE</span>
+            </div>
+            <div class="result-value" id="required-value">—</div>
+            <p class="result-description" id="required-description"></p>
+            <div class="result-divider"></div>
+            <div class="result-foot"><span>目標までのレート差</span><strong id="required-diff">—</strong></div>
+          </div>
+        </section>
+
+        <section class="panel" id="panel-new" role="tabpanel" aria-labelledby="tab-new">
+          <div class="section-heading">
+            <h2>今回の結果から予測</h2>
+            <p>現在のレーティング・参加回数・今回のパフォーマンスから、新レーティングを計算します。</p>
+          </div>
+
+          <div class="field">
+            <div class="label-row">
+              <label for="current-rating-2">現在のレーティング</label>
+              <span class="field-hint">CURRENT RATING</span>
+            </div>
+            <input type="number" id="current-rating-2" value="1200" min="1" step="1" inputmode="numeric">
+          </div>
+          <div class="field">
+            <div class="label-row">
+              <label for="input-perf">今回のパフォーマンス</label>
+              <span class="field-hint">CONTEST PERFORMANCE</span>
+            </div>
+            <input type="number" id="input-perf" value="1500" step="1" inputmode="numeric">
+          </div>
+          <div class="field">
+            <div class="label-row">
+              <label for="rated-count-2">これまでの参加回数</label>
+              <span class="field-hint">PREVIOUS RATED CONTESTS</span>
+            </div>
+            <input type="number" id="rated-count-2" value="10" min="0" step="1" inputmode="numeric">
+          </div>
+
+          <button class="calculate" id="calculate-new" type="button">
+            <span>新しいレートを計算</span>
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div class="error" id="error-new" role="alert"></div>
+
+          <div class="result" id="result-new" aria-live="polite">
+            <div class="result-top">
+              <span class="result-label">PREDICTED NEW RATING</span>
+              <span class="result-chip">ESTIMATED VALUE</span>
+            </div>
+            <div class="result-value" id="new-value">—</div>
+            <p class="result-description" id="new-description"></p>
+            <div class="result-divider"></div>
+            <div class="result-foot"><span>レーティング変動</span><strong id="new-diff">—</strong></div>
+          </div>
+        </section>
+
+        <aside class="note">
+          <span class="note-icon">i</span>
+          <span>このツールは公開されているレーティング計算ロジックを参考にした非公式の推定ツールです。実際のレーティングには履歴や丸め処理などによる差が生じる場合があります。</span>
+        </aside>
+      </main>
+
+      <footer class="footer">
+        <span>RATING LAB <span style="color:#c3cad4;">/</span> UNOFFICIAL ESTIMATOR</span>
+        <span class="footer-right"><a href="https://info.atcoder.jp/logoguide" target="_blank" rel="noopener noreferrer">AtCoderロゴ利用ガイドライン</a></span>
+      </footer>
+    </div>
+  </div>
+
+  <script>
+    "use strict";
+
+    // AtCoder estimator の計算ロジック
+    function bigf(n) {
+      let num = 1.0;
+      let den = 1.0;
+
+      for (let i = 0; i < n; ++i) {
+        num *= 0.81;
+        den *= 0.9;
+      }
+
+      num = (1 - num) * 0.81 / 0.19;
+      den = (1 - den) * 0.9 / 0.1;
+
+      return Math.sqrt(num) / den;
+    }
+
+    function f(n) {
+      const finf = bigf(400);
+      return (bigf(n) - finf) / (bigf(1) - finf) * 1200.0;
+    }
+
+    function unpositivizeRating(rating) {
+      if (rating >= 400.0) return rating;
+      return 400.0 + 400.0 * Math.log(rating / 400.0);
+    }
+
+    function positivizeRating(rating) {
+      if (rating >= 400.0) return rating;
+      return 400.0 * Math.exp((rating - 400.0) / 400.0);
+    }
+
+    // n 回参加後の補正前レートと今回の performance から、次の補正前レートを計算
+    function calcRatingFromLast(last, perf, n) {
+      last += f(n);
+
+      const weight = 9.0 - 9.0 * Math.pow(0.9, n);
+      const numerator =
+        weight * Math.pow(2.0, last / 800.0) +
+        Math.pow(2.0, perf / 800.0);
+      const denominator = 1.0 + weight;
+
+      return Math.log2(numerator / denominator) * 800.0 - f(n + 1);
+    }
+
+    function simulateNewRating(currentRating, perf, ratedMatches) {
+      // 初回参加時は履歴がないため、1回分の rating は performance - 1200
+      if (ratedMatches === 0) {
+        return Math.round(positivizeRating(perf - 1200.0));
+      }
+
+      const last = unpositivizeRating(currentRating);
+      const rawNewRating = calcRatingFromLast(last, perf, ratedMatches);
+      return Math.round(positivizeRating(rawNewRating));
+    }
+
+    // test-last.html と同じ探索方法：補正前レートで比較し、100回二分探索
+    function findRequiredPerformance(currentRating, targetRating, ratedMatches) {
+      const goal = unpositivizeRating(targetRating);
+      const last = unpositivizeRating(currentRating);
+
+      if (ratedMatches === 0) {
+        return goal + 1200.0;
+      }
+
+      let lo = -10000.0;
+      let hi = 10000.0;
+
+      for (let i = 0; i < 100; ++i) {
+        const mid = (hi + lo) / 2.0;
+        const rating = calcRatingFromLast(last, mid, ratedMatches);
+
+        if (rating >= goal) {
+          hi = mid;
+        } else {
+          lo = mid;
+        }
+      }
+
+      return hi;
+    }
+
+    function getNumber(id) {
+      const input = document.getElementById(id);
+      const raw = input.value.trim();
+      if (raw === "") {
+        input.classList.add("invalid");
+        return null;
+      }
+
+      const value = Number(raw);
+      if (!Number.isFinite(value)) {
+        input.classList.add("invalid");
+        return null;
+      }
+
+      input.classList.remove("invalid");
+      return value;
+    }
+
+    function validateCommon(current, count, currentId, countId) {
+      let valid = true;
+
+      if (current === null || current <= 0) {
+        document.getElementById(currentId).classList.add("invalid");
+        valid = false;
+      }
+      if (count === null || !Number.isInteger(count) || count < 0) {
+        document.getElementById(countId).classList.add("invalid");
+        valid = false;
+      }
+      return valid;
+    }
+
+    function showError(id, message) {
+      const box = document.getElementById(id);
+      box.textContent = message;
+      box.classList.add("show");
+    }
+
+    function clearError(id) {
+      const box = document.getElementById(id);
+      box.textContent = "";
+      box.classList.remove("show");
+    }
+
+    function formatSigned(value) {
+      return (value > 0 ? "+" : "") + value;
+    }
+
+    function calculateRequired() {
+      clearError("error-required");
+      const current = getNumber("current-rating-1");
+      const target = getNumber("target-rating");
+      const count = getNumber("rated-count-1");
+
+      if (!validateCommon(current, count, "current-rating-1", "rated-count-1")) {
+        showError("error-required", "現在のレーティングと参加回数を正しく入力してください。");
+        return;
+      }
+      if (target === null || target <= 0) {
+        document.getElementById("target-rating").classList.add("invalid");
+        showError("error-required", "目標レーティングは0より大きい数値を入力してください。");
+        return;
+      }
+      document.getElementById("target-rating").classList.remove("invalid");
+
+      const required = findRequiredPerformance(current, target, count);
+      if (!Number.isFinite(required)) {
+        showError("error-required", "計算できませんでした。入力値を確認してください。");
+        return;
+      }
+
+      document.getElementById("required-value").textContent = required.toFixed(2);
+      document.getElementById("required-description").textContent =
+        "次回のコンテストで目標レーティングに到達するための理論上の必要パフォーマンスです。";
+      document.getElementById("required-diff").textContent = formatSigned(target - current);
+      document.getElementById("result-required").classList.add("show");
+    }
+
+    function calculateNew() {
+      clearError("error-new");
+      const current = getNumber("current-rating-2");
+      const perf = getNumber("input-perf");
+      const count = getNumber("rated-count-2");
+
+      if (!validateCommon(current, count, "current-rating-2", "rated-count-2")) {
+        showError("error-new", "現在のレーティングと参加回数を正しく入力してください。");
+        return;
+      }
+      if (perf === null) {
+        document.getElementById("input-perf").classList.add("invalid");
+        showError("error-new", "パフォーマンスを数値で入力してください。");
+        return;
+      }
+      document.getElementById("input-perf").classList.remove("invalid");
+
+      const newRating = simulateNewRating(current, perf, count);
+      const diff = newRating - current;
+
+      document.getElementById("new-value").textContent = String(newRating);
+      document.getElementById("new-description").textContent =
+        "入力したパフォーマンスをもとに計算した推定レーティングです。";
+      document.getElementById("new-diff").textContent = formatSigned(diff);
+      document.getElementById("result-new").classList.add("show");
+    }
+
+    function switchTab(which) {
+      const required = which === "required";
+      document.getElementById("tab-required").classList.toggle("active", required);
+      document.getElementById("tab-new").classList.toggle("active", !required);
+      document.getElementById("tab-required").setAttribute("aria-selected", String(required));
+      document.getElementById("tab-new").setAttribute("aria-selected", String(!required));
+      document.getElementById("panel-required").classList.toggle("active", required);
+      document.getElementById("panel-new").classList.toggle("active", !required);
+    }
+
+    document.getElementById("tab-required").addEventListener("click", () => switchTab("required"));
+    document.getElementById("tab-new").addEventListener("click", () => switchTab("new"));
+    document.getElementById("calculate-required").addEventListener("click", calculateRequired);
+    document.getElementById("calculate-new").addEventListener("click", calculateNew);
+
+    // Enter キーでも、現在表示中の計算を実行
+    document.querySelectorAll("input").forEach((input) => {
+      input.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          const requiredPanel = document.getElementById("panel-required");
+          if (requiredPanel.classList.contains("active")) calculateRequired();
+          else calculateNew();
+        }
+      });
+      input.addEventListener("input", () => input.classList.remove("invalid"));
+    });
+  </script>
+</body>
+</html>
