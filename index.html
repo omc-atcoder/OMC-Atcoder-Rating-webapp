@@ -297,174 +297,281 @@
     </div>
 </div>
 
+
 <script>
-    // タブ切り替え logic
+    // ==========================================
+    // タブ切り替え
+    // ==========================================
+
     function switchTab(index) {
         const tabs = document.querySelectorAll('.tab');
         const panels = document.querySelectorAll('.panel-content');
-        
+
         tabs.forEach((tab, i) => {
-            if (i === index) {
-                tab.classList.add('active');
-                panels[i].classList.add('active');
-            } else {
-                tab.classList.remove('active');
-                panels[i].classList.remove('active');
-            }
+            tab.classList.toggle('active', i === index);
+            panels[i].classList.toggle('active', i === index);
         });
     }
 
-    // =================================================================
-    //  AtCoder / OMC 公式仕様 ＆ koba-e964 氏準拠の厳密な計算ロジック
-    // =================================================================
 
-    // 補正関数 f(n)
-    function f(n) {
-        if (n <= 0) return 0;
-        let pow1 = 1.0;
-        let pow2 = 1.0;
-        let num = 0.0;
-        let den = 0.0;
+    // ==========================================
+    // AtCoder Rating Estimator 計算ロジック
+    // ==========================================
+
+    // bigf(n)
+    function bigf(n) {
+        let pow1 = 1;
+        let pow2 = 1;
+        let numerator = 0;
+        let denominator = 0;
+
         for (let i = 0; i < n; i++) {
             pow1 *= 0.81;
             pow2 *= 0.9;
-            num += pow1;
-            den += pow2;
+
+            numerator += pow1;
+            denominator += pow2;
         }
-        return Math.sqrt(num) / den;
+
+        return Math.sqrt(numerator) / denominator;
     }
 
-    // 収束値 f(∞) ≒ f(400)
-    const FINF = f(400);
+    // 補正の基準値
+    const FINF = bigf(400);
 
-    // 補正値 f(n) -> G(n) への変換
+    // f(n)
     function calcF(n) {
-        if (n <= 0) return 0;
-        return (f(n) - FINF) / (f(1) - FINF) * 1200.0;
-    }
-
-    // 表示レート R から、補正前の実効内部レート R_unpos を逆算
-    function unpositivize(rating, n) {
-        let r = rating;
-        // 400以下の指数補正の逆変換
-        if (r <= 400.0) {
-            r = 400.0 + 400.0 * Math.log(r / 400.0);
-        }
-        // 参加回数補正の逆変換 (G(n) を書き戻す)
-        return r + calcF(n);
-    }
-
-    // 補正前の実効内部レート R_unpos から、表示レート R を計算
-    function positivize(unpos, n) {
-        let r = unpos - calcF(n);
-        if (r <= 400.0) {
-            return 400.0 * Math.exp((r - 400.0) / 400.0);
-        }
-        return r;
-    }
-
-    // --- コア計算：n回参加済みの状態から、次回パフォーマンス perf を取った際の新レート ---
-    function simulateNewRating(currentRating, perf, n) {
-        // 1回も参加していない（n = 0）場合の初参加特殊ロジック
-        if (n === 0) {
-            const raw = perf - 1200.0;
-            return Math.round(positivize(raw + calcF(1), 1));
-        }
-
-        // 1. 現在の表示レートから、現在の補正前実効内部レート S_n を算出
-        const currentUnpos = unpositivize(currentRating, n);
-
-        // 2. 重み係数の算出 (1〜n 回目までの 0.81^i と 0.9^i の和)
-        let sum081_n = 0.0;
-        let sum09_n = 0.0;
-        let p081 = 1.0;
-        let p09 = 1.0;
-        for (let i = 0; i < n; i++) {
-            p081 *= 0.81;
-            p09 *= 0.9;
-            sum081_n += p081;
-            sum09_n += p09;
-        }
-
-        // 3. n+1 回目（今回）の重みを加えた分子・分母の再構成
-        // 過去 n 回分の実効平均パフォーマンス 2^(currentUnpos / 800)
-        const pastBase = Math.pow(2.0, currentUnpos / 800.0);
-        
-        // 過去分は 1 回分古くなるため 0.81 倍減衰して継承
-        const numNew = Math.pow(2.0, perf / 800.0) * 0.81 + pastBase * (sum081_n * 0.81);
-        const denNew = 0.9 + (sum09_n * 0.9);
-
-        // 4. 新しい実効内部レート S_{n+1} の算出
-        const nextUnpos = Math.log2(numNew / denNew) * 800.0;
-
-        // 5. 補正項 G(n+1) と 400以下のポジティブ補正を適用して最終整数値へ
-        return Math.round(positivize(nextUnpos, n + 1));
+        return (
+            (bigf(n) - FINF) /
+            (bigf(1) - FINF)
+        ) * 1200.0;
     }
 
 
-    // =================================================================
-    //  UI 連動処理
-    // =================================================================
+    // ==========================================
+    // Rating の変換
+    // ==========================================
 
-    // モード1: 目標レートから必要パフォーマンスを計算
-    function calcRequiredPerformance() {
-        const current = parseFloat(document.getElementById('current-rating-1').value);
-        const target = parseFloat(document.getElementById('target-rating').value);
-        const n = parseInt(document.getElementById('rated-count-1').value);
-
-        if (isNaN(current) || isNaN(target) || isNaN(n) || n < 0) {
-            alert('正しい数値を入力してください。');
-            return;
+    // 通常のRating → 補正前Rating
+    function unpositivizeRating(rating) {
+        if (rating >= 400.0) {
+            return rating;
         }
 
-        // 二分法（Binary Search）による高精度逆算 (-4000 〜 9000 の範囲)
-        let low = -4000;
-        let high = 9000;
+        return 400.0 + 400.0 * Math.log(rating / 400.0);
+    }
+
+    // 補正前Rating → 通常のRating
+    function positivizeRating(rating) {
+        if (rating >= 400.0) {
+            return rating;
+        }
+
+        return 400.0 * Math.exp((rating - 400.0) / 400.0);
+    }
+
+
+    // ==========================================
+    // 現在のRatingとPerformanceから新Ratingを計算
+    // ==========================================
+
+    function calcRatingFromLast(last, perf, ratedMatches) {
+
+        // 初回参加
+        if (ratedMatches === 0) {
+            return perf - 1200.0;
+        }
+
+        last += calcF(ratedMatches);
+
+        const weight =
+            9.0 - 9.0 * Math.pow(0.9, ratedMatches);
+
+        const numerator =
+            weight * Math.pow(2.0, last / 800.0) +
+            Math.pow(2.0, perf / 800.0);
+
+        const denominator = 1.0 + weight;
+
+        return (
+            Math.log2(numerator / denominator) * 800.0
+            - calcF(ratedMatches + 1)
+        );
+    }
+
+
+    // 新しいRatingを計算
+    function simulateNewRating(currentRating, perf, ratedMatches) {
+
+        const last = unpositivizeRating(currentRating);
+
+        const newRatingBeforeCorrection =
+            calcRatingFromLast(last, perf, ratedMatches);
+
+        const newRating =
+            positivizeRating(newRatingBeforeCorrection);
+
+        return Math.round(newRating);
+    }
+
+
+    // ==========================================
+    // 目標Ratingに必要なPerformanceを計算
+    // ==========================================
+
+    function calcRequiredPerformance(currentRating, targetRating, ratedMatches) {
+
+        let valid = 10000.0;
+        let invalid = -10000.0;
 
         for (let i = 0; i < 100; i++) {
-            const mid = (low + high) / 2.0;
-            const simulated = simulateNewRating(current, mid, n);
-            if (simulated >= target) {
-                high = mid;
+
+            const mid = (invalid + valid) / 2.0;
+
+            const simulatedRating =
+                simulateNewRating(
+                    currentRating,
+                    mid,
+                    ratedMatches
+                );
+
+            if (targetRating <= simulatedRating) {
+                valid = mid;
             } else {
-                low = mid;
+                invalid = mid;
             }
         }
 
-        const requiredPerf = Math.round(high);
-
-        const resultPanel = document.getElementById('result-1');
-        const resVal = document.getElementById('res-val-1');
-        const resSub = document.getElementById('res-sub-1');
-
-        resVal.textContent = requiredPerf;
-        const diff = target - current;
-        resSub.innerHTML = `現在のレートから <span class="${diff >= 0 ? 'diff-positive' : 'diff-negative'}">${diff >= 0 ? '+' + diff : diff}</span> 到達するために必要なパフォーマンスです。`;
-        resultPanel.classList.add('show');
+        return valid;
     }
 
-    // モード2: パフォーマンスから新レートを計算
-    function calcNewRating() {
-        const current = parseFloat(document.getElementById('current-rating-2').value);
-        const perf = parseFloat(document.getElementById('input-perf').value);
-        const n = parseInt(document.getElementById('rated-count-2').value);
 
-        if (isNaN(current) || isNaN(perf) || isNaN(n) || n < 0) {
-            alert('正しい数値を入力してください。');
+    // ==========================================
+    // 入力値の検証
+    // ==========================================
+
+    function validateInputs(current, value, count) {
+
+        if (
+            !Number.isFinite(current) ||
+            !Number.isFinite(value) ||
+            !Number.isInteger(count)
+        ) {
+            alert('すべての項目に正しい数値を入力してください。');
+            return false;
+        }
+
+        if (current <= 0 || value <= 0) {
+            alert('Ratingは0より大きい値を入力してください。');
+            return false;
+        }
+
+        if (count < 0) {
+            alert('参加回数は0以上で入力してください。');
+            return false;
+        }
+
+        return true;
+    }
+
+
+    // ==========================================
+    // モード1：必要Performanceの計算
+    // ==========================================
+
+    function calcRequiredPerformance() {
+
+        const current = Number(
+            document.getElementById('current-rating-1').value
+        );
+
+        const target = Number(
+            document.getElementById('target-rating').value
+        );
+
+        const n = Number(
+            document.getElementById('rated-count-1').value
+        );
+
+        if (!validateInputs(current, target, n)) {
             return;
         }
 
-        const newRating = simulateNewRating(current, perf, n);
-        const diff = newRating - current;
+        const requiredPerf =
+            calcRequiredPerformance(current, target, n);
 
-        const resultPanel = document.getElementById('result-2');
-        const resVal = document.getElementById('res-val-2');
-        const resSub = document.getElementById('res-sub-2');
+        const resultPanel =
+            document.getElementById('result-1');
 
-        resVal.textContent = newRating;
-        resSub.innerHTML = `変動予測: <span class="${diff >= 0 ? 'diff-positive' : 'diff-negative'}">${diff >= 0 ? '+' + diff : diff}</span> (パフォーマンス: ${perf})`;
+        const resVal =
+            document.getElementById('res-val-1');
+
+        const resSub =
+            document.getElementById('res-sub-1');
+
+        resVal.textContent = Math.ceil(requiredPerf);
+
+        const diff = target - current;
+
+        resSub.innerHTML =
+            `現在のレートから <span class="${
+                diff >= 0 ? 'diff-positive' : 'diff-negative'
+            }">${
+                diff >= 0 ? '+' + diff : diff
+            }</span> 到達するために必要なパフォーマンスです。`;
+
         resultPanel.classList.add('show');
     }
+
+
+    // ==========================================
+    // モード2：新Ratingの計算
+    // ==========================================
+
+    function calcNewRating() {
+
+        const current = Number(
+            document.getElementById('current-rating-2').value
+        );
+
+        const perf = Number(
+            document.getElementById('input-perf').value
+        );
+
+        const n = Number(
+            document.getElementById('rated-count-2').value
+        );
+
+        if (!validateInputs(current, perf, n)) {
+            return;
+        }
+
+        const newRating =
+            simulateNewRating(current, perf, n);
+
+        const diff = newRating - current;
+
+        const resultPanel =
+            document.getElementById('result-2');
+
+        const resVal =
+            document.getElementById('res-val-2');
+
+        const resSub =
+            document.getElementById('res-sub-2');
+
+        resVal.textContent = newRating;
+
+        resSub.innerHTML =
+            `変動: <span class="${
+                diff >= 0 ? 'diff-positive' : 'diff-negative'
+            }">${
+                diff >= 0 ? '+' + diff : diff
+            }</span> (パフォーマンス: ${perf})`;
+
+        resultPanel.classList.add('show');
+    }
+
 </script>
 </body>
 </html>
