@@ -79,14 +79,18 @@
     }
     .atcoder-logo { display: block; width: 104px; height: auto; max-height: 34px; object-fit: contain; }
     .brand-divider { width: 1px; height: 25px; background: rgba(255,255,255,.2); }
-    .omc-mark { display: flex; align-items: center; gap: 8px; color: #fff; }
-    .omc-symbol {
-      display: grid; place-items: center; width: 31px; height: 31px;
-      border: 1.5px solid #42c59a; border-radius: 9px;
-      color: #66dfb4; font-size: 12px; font-weight: 900; letter-spacing: -.08em;
-    }
-    .omc-word { font-size: 12px; line-height: 1.1; font-weight: 850; letter-spacing: .1em; }
-    .omc-word small { display: block; margin-top: 4px; color: #aab5c5; font-size: 7px; letter-spacing: .13em; }
+    .omc-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.omc-logo {
+  display: block;
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+}
     .independent {
       position: relative; z-index: 1; padding: 6px 9px; border: 1px solid rgba(255,255,255,.17);
       border-radius: 999px; color: #c5cedb; font-size: 9px; font-weight: 700;
@@ -235,10 +239,13 @@
               <span style="display:none;color:#fff;font-size:17px;font-weight:850;letter-spacing:-.04em;">AtCoder</span>
             </a>
             <span class="brand-divider"></span>
-            <a class="brand-link omc-mark" href="https://onlinemathcontest.com/favicon.ico" target="_blank" rel="noopener noreferrer" aria-label="Online Math Contest">
-              <span class="omc-symbol">OMC</span>
-              <span class="omc-word">OMC<small>ONLINE MATH CONTEST</small></span>
-            </a>
+           <a class="brand-link omc-mark" href="https://onlinemathcontest.com/" target="_blank" rel="noopener noreferrer" aria-label="Online Math Contest">
+  <img
+    class="omc-logo"
+    src="https://onlinemathcontest.com/favicon.ico"
+    alt="OMC"
+  >
+</a>
           </div>
           <span class="independent">UNOFFICIAL TOOL</span>
         </div>
